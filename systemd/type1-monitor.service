@@ -3,11 +3,10 @@ Description=Type1 Monitor FastAPI Backend
 After=network.target mysql.service
 
 [Service]
-User=type1
 WorkingDirectory=/srv/type1-monitor/backend
-ExecStart=/srv/type1-monitor/backend/venv/bin/python3 -m uvicorn main:app --host 127.0.0.1 --port 8000
+ExecStart=/srv/type1-monitor/backend/venv/bin/python3 -m uvicorn main:app --host 127.0.0.1 --port 8002
 Restart=always
 EnvironmentFile=/srv/type1-monitor/backend/.env
 
 [Install]
-WantedBy=multi-user.target
+WantedBy=default.target
