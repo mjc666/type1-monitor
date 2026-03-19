@@ -19,11 +19,11 @@ function App() {
 
   const fetchData = async () => {
     try {
-      const statusRes = await fetch('/api/status');
+      const statusRes = await fetch('/api/status', { cache: 'no-store' });
       const statusData = await statusRes.json();
       setStatus(statusData);
 
-      const historyRes = await fetch('/api/history?hours=24');
+      const historyRes = await fetch('/api/history?hours=24', { cache: 'no-store' });
       const historyData = await historyRes.json();
       setHistory(historyData);
     } catch (err) {
@@ -112,7 +112,9 @@ function App() {
             </div>
             <div className="stat-info">
               <h3>Insulin On Board</h3>
-              <p className="text-secondary">{status?.iob?.amount || '0.00'} U</p>
+              <p className="text-secondary">
+                {status?.iob ? parseFloat(status.iob.amount).toFixed(2) : (status ? '0.00' : '--.--')} U
+              </p>
             </div>
           </section>
 
@@ -123,7 +125,7 @@ function App() {
             <div className="stat-info">
               <h3>Last 24h Bolus</h3>
               <p className="text-primary">
-                {history?.boluses?.reduce((acc: number, curr: any) => acc + parseFloat(curr.amount), 0).toFixed(2) || '0.00'} U
+                {history?.boluses ? history.boluses.reduce((acc: number, curr: any) => acc + parseFloat(curr.amount), 0).toFixed(2) : (history ? '0.00' : '--.--')} U
               </p>
             </div>
           </section>
@@ -188,13 +190,13 @@ function App() {
               <div key={b.id} className="history-item">
                 <div className="history-item-left">
                   <span className="type-tag type-bolus">BOLUS</span>
-                  <strong>{b.amount} U</strong>
+                  <strong>{parseFloat(b.amount).toFixed(2)} U</strong>
                 </div>
                 <span className="history-time">{format(parseISO(b.timestamp), 'h:mm a')}</span>
               </div>
             ))}
             {(!history?.boluses || history.boluses.length === 0) && (
-              <p className="glucose-label" style={{ textAlign: 'center', padding: '1rem' }}>No recent events found</p>
+              <p className="glucose-label" style={{ textAlign: 'center', padding: '1rem' }}>{history ? 'No recent events found' : 'Loading events...'}</p>
             )}
           </div>
         </section>
