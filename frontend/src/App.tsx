@@ -101,7 +101,7 @@ function App() {
             <span>{status?.glucose?.trend || 'Stable'}</span>
           </div>
           <div className="glucose-label" style={{ marginTop: '1rem', fontSize: '0.75rem' }}>
-            mg/dL · {status?.glucose?.timestamp ? format(parseISO(status.glucose.timestamp), 'HH:mm') : '--:--'}
+            mg/dL · {status?.glucose?.timestamp ? format(parseISO(status.glucose.timestamp), 'h:mm a') : '--:--'}
           </div>
         </section>
 
@@ -156,14 +156,14 @@ function App() {
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.05)" />
                 <XAxis 
                   dataKey="timestamp" 
-                  tickFormatter={(str) => format(parseISO(str), 'HH:mm')}
+                  tickFormatter={(str) => format(parseISO(str), 'h a')}
                   stroke="var(--text-muted)"
                   fontSize={12}
                 />
                 <YAxis domain={[40, 300]} stroke="var(--text-muted)" fontSize={12} />
                 <Tooltip 
                   contentStyle={{ background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: '1rem' }}
-                  labelFormatter={(str) => format(parseISO(str as string), 'HH:mm, MMM d')}
+                  labelFormatter={(str) => format(parseISO(str as string), 'h:mm a, MMM d')}
                 />
                 <Area 
                   type="monotone" 
@@ -190,7 +190,7 @@ function App() {
                   <span className="type-tag type-bolus">BOLUS</span>
                   <strong>{b.amount} U</strong>
                 </div>
-                <span className="history-time">{format(parseISO(b.timestamp), 'HH:mm')}</span>
+                <span className="history-time">{format(parseISO(b.timestamp), 'h:mm a')}</span>
               </div>
             ))}
             {(!history?.boluses || history.boluses.length === 0) && (
