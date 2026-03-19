@@ -1,0 +1,23 @@
+# Environments
+venv/
+.env
+.creds_cache
+.config/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Node / Frontend
+node_modules/
+dist/
+.eslintcache
+
+# IDEs
+.idea/
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db

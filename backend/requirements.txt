@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+pydexcom
+tconnectsync
+sqlalchemy
+mysql-connector-python
+python-dotenv
+apscheduler
+setuptools<70
