@@ -19,12 +19,16 @@ function App() {
 
   const fetchData = async () => {
     try {
-      const statusRes = await fetch('/api/status', { cache: 'no-store' });
+      // Consolidate fetches to help Safari sync state updates
+      const [statusRes, historyRes] = await Promise.all([
+        fetch('/api/status', { cache: 'no-store' }),
+        fetch('/api/history?hours=24', { cache: 'no-store' })
+      ]);
+      
       const statusData = await statusRes.json();
-      setStatus(statusData);
-
-      const historyRes = await fetch('/api/history?hours=24', { cache: 'no-store' });
       const historyData = await historyRes.json();
+      
+      setStatus(statusData);
       setHistory(historyData);
     } catch (err) {
       console.error('Failed to fetch data', err);
@@ -62,6 +66,11 @@ function App() {
     if (val < 70) return 'text-danger';
     if (val > 180) return 'text-accent';
     return 'text-primary';
+  };
+
+  const formatInsulin = (val: any) => {
+    const num = parseFloat(val);
+    return isNaN(num) ? '0.00' : num.toFixed(2);
   };
 
   return (
@@ -105,15 +114,16 @@ function App() {
           </div>
         </section>
 
-        <div className="stats-container">
+        {/* Using a key based on status presence forces a full repaint in Safari when data arrives */}
+        <div className="stats-container" key={status ? 'status-loaded' : 'status-loading'}>
           <section className="glass-card stat-card">
             <div className="stat-icon">
               <Zap className="text-secondary" />
             </div>
             <div className="stat-info">
               <h3>Insulin On Board</h3>
-              <p className="text-secondary">
-                {status?.iob ? parseFloat(status.iob.amount).toFixed(2) : (status ? '0.00' : '--.--')} U
+              <p className="text-secondary" key={status?.iob?.amount}>
+                {status ? formatInsulin(status.iob?.amount) : '--.--'} U
               </p>
             </div>
           </section>
@@ -124,8 +134,8 @@ function App() {
             </div>
             <div className="stat-info">
               <h3>Last 24h Bolus</h3>
-              <p className="text-primary">
-                {history?.boluses ? history.boluses.reduce((acc: number, curr: any) => acc + parseFloat(curr.amount), 0).toFixed(2) : (history ? '0.00' : '--.--')} U
+              <p className="text-primary" key={history?.boluses?.length}>
+                {history ? formatInsulin(history.boluses?.reduce((acc: number, curr: any) => acc + parseFloat(curr.amount), 0)) : '--.--'} U
               </p>
             </div>
           </section>
