@@ -158,6 +158,23 @@ def sync_tandem():
                     db.add(basal)
                     basal_count += 1
 
+            # Handle Basal Delivery (Periodic entries)
+            if isinstance(event, eventtypes.LidBasalDelivery):
+                # Using seqNum as basal_id for these periodic updates
+                basal_id = f"delivery-{event.raw.seqNum}"
+                exists = db.query(PumpBasal).filter(PumpBasal.basal_id == basal_id).first()
+                if not exists:
+                    dt = arrow.get(event.eventTimestamp).datetime.replace(tzinfo=None)
+                    # commandedRate is in milliunits/hr
+                    rate_u_hr = float(event.commandedRate) / 1000.0
+                    basal = PumpBasal(
+                        rate=rate_u_hr,
+                        basal_id=basal_id,
+                        timestamp=dt
+                    )
+                    db.add(basal)
+                    basal_count += 1
+
             # Handle Battery Info
             if isinstance(event, eventtypes.LidDailyBasal):
                 event_time = arrow.get(event.eventTimestamp).datetime.replace(tzinfo=None)

@@ -73,6 +73,16 @@ function App() {
     return isNaN(num) ? '0.00' : num.toFixed(2);
   };
 
+  // Combine and sort boluses and basals for the history list
+  const combinedEvents = () => {
+    if (!history) return [];
+    const bols = (history.boluses || []).map((b: any) => ({ ...b, type: 'BOLUS' }));
+    const bass = (history.basals || []).map((b: any) => ({ ...b, type: 'BASAL' }));
+    return [...bols, ...bass].sort((a, b) => 
+      new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+    ).slice(0, 10);
+  };
+
   return (
     <div className="dashboard-container">
       <header className="header">
@@ -225,16 +235,18 @@ function App() {
             <h2><HistoryIcon size={18} /> Recent Pump Events</h2>
           </div>
           <div className="history-list">
-            {history?.boluses?.slice().reverse().slice(0, 5).map((b: any) => (
-              <div key={b.id} className="history-item">
+            {combinedEvents().map((e: any) => (
+              <div key={e.id || e.basal_id || e.bolus_id} className="history-item">
                 <div className="history-item-left">
-                  <span className="type-tag type-bolus">BOLUS</span>
-                  <strong>{formatInsulin(b.amount)} U</strong>
+                  <span className={`type-tag ${e.type === 'BOLUS' ? 'type-bolus' : 'type-basal'}`}>
+                    {e.type}
+                  </span>
+                  <strong>{e.type === 'BOLUS' ? formatInsulin(e.amount) : formatInsulin(e.rate)} U{e.type === 'BASAL' ? '/hr' : ''}</strong>
                 </div>
-                <span className="history-time">{format(parseISO(b.timestamp), 'h:mm a')}</span>
+                <span className="history-time">{format(parseISO(e.timestamp), 'MMM d, h:mm a')}</span>
               </div>
             ))}
-            {(!history?.boluses || history.boluses.length === 0) && (
+            {(!history || combinedEvents().length === 0) && (
               <p className="glucose-label" style={{ textAlign: 'center', padding: '1rem' }}>{history ? 'No recent events found' : 'Loading events...'}</p>
             )}
           </div>
