@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Droplet, Zap, RefreshCw, ArrowUp, ArrowDown, ArrowRight, TrendingUp, History as HistoryIcon, ShieldCheck, Battery } from 'lucide-react';
+import { Droplet, Zap, RefreshCw, ArrowUp, ArrowDown, ArrowRight, TrendingUp, History as HistoryIcon, ShieldCheck, Battery, Activity } from 'lucide-react';
 import { XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area 
 } from 'recharts';
 import { format, parseISO, formatDistanceToNow, differenceInMinutes } from 'date-fns';
@@ -71,16 +71,6 @@ function App() {
   const formatInsulin = (val: any) => {
     const num = parseFloat(val);
     return isNaN(num) ? '0.00' : num.toFixed(2);
-  };
-
-  // Combine and sort boluses and basals for the history list
-  const combinedEvents = () => {
-    if (!history) return [];
-    const bols = (history.boluses || []).map((b: any) => ({ ...b, type: 'BOLUS' }));
-    const bass = (history.basals || []).map((b: any) => ({ ...b, type: 'BASAL' }));
-    return [...bols, ...bass].sort((a, b) => 
-      new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-    ).slice(0, 10);
   };
 
   return (
@@ -163,6 +153,23 @@ function App() {
 
           <section className="glass-card stat-card">
             <div className="stat-icon">
+              <Activity className="text-primary" />
+            </div>
+            <div className="stat-info">
+              <h3>Basal Rate</h3>
+              <p className="text-primary" key={history?.basals?.length}>
+                {history?.basals?.length > 0 ? formatInsulin(history.basals[history.basals.length - 1].rate) : '--.--'} U/hr
+              </p>
+              {history?.basals?.length > 0 && (
+                <div style={{ fontSize: '0.7rem', opacity: 0.6, marginTop: '0.2rem' }}>
+                  Updated {format(parseISO(history.basals[history.basals.length - 1].timestamp), 'h:mm a')}
+                </div>
+              )}
+            </div>
+          </section>
+
+          <section className="glass-card stat-card">
+            <div className="stat-icon">
               <Droplet className="text-primary" />
             </div>
             <div className="stat-info">
@@ -232,22 +239,20 @@ function App() {
 
         <section className="glass-card history-card">
           <div className="chart-header">
-            <h2><HistoryIcon size={18} /> Recent Pump Events</h2>
+            <h2><HistoryIcon size={18} /> Recent Boluses</h2>
           </div>
           <div className="history-list">
-            {combinedEvents().map((e: any) => (
-              <div key={e.id || e.basal_id || e.bolus_id} className="history-item">
+            {history?.boluses?.slice().reverse().slice(0, 10).map((b: any) => (
+              <div key={b.id || b.bolus_id} className="history-item">
                 <div className="history-item-left">
-                  <span className={`type-tag ${e.type === 'BOLUS' ? 'type-bolus' : 'type-basal'}`}>
-                    {e.type}
-                  </span>
-                  <strong>{e.type === 'BOLUS' ? formatInsulin(e.amount) : formatInsulin(e.rate)} U{e.type === 'BASAL' ? '/hr' : ''}</strong>
+                  <span className="type-tag type-bolus">BOLUS</span>
+                  <strong>{formatInsulin(b.amount)} U</strong>
                 </div>
-                <span className="history-time">{format(parseISO(e.timestamp), 'MMM d, h:mm a')}</span>
+                <span className="history-time">{format(parseISO(b.timestamp), 'MMM d, h:mm a')}</span>
               </div>
             ))}
-            {(!history || combinedEvents().length === 0) && (
-              <p className="glucose-label" style={{ textAlign: 'center', padding: '1rem' }}>{history ? 'No recent events found' : 'Loading events...'}</p>
+            {(!history?.boluses || history.boluses.length === 0) && (
+              <p className="glucose-label" style={{ textAlign: 'center', padding: '1rem' }}>{history ? 'No recent boluses found' : 'Loading boluses...'}</p>
             )}
           </div>
         </section>
