@@ -174,8 +174,8 @@ def sync_tandem():
 
 def start_sync():
     scheduler = BackgroundScheduler()
-    scheduler.add_job(sync_dexcom, 'interval', minutes=5)
-    scheduler.add_job(sync_tandem, 'interval', minutes=5)
+    scheduler.add_job(sync_dexcom, 'interval', minutes=2)
+    scheduler.add_job(sync_tandem, 'interval', minutes=2)
     scheduler.start()
     # Run once at startup
     sync_dexcom()
