@@ -73,6 +73,12 @@ function App() {
     return isNaN(num) ? '0.00' : num.toFixed(2);
   };
 
+  const calculateTIR = () => {
+    if (!history?.glucose || history.glucose.length === 0) return null;
+    const inRange = history.glucose.filter((g: any) => g.value >= 70 && g.value <= 180).length;
+    return Math.round((inRange / history.glucose.length) * 100);
+  };
+
   return (
     <div className="dashboard-container">
       <header className="header">
@@ -192,7 +198,9 @@ function App() {
             </div>
             <div className="stat-info">
               <h3>Time In Range</h3>
-              <p className="text-accent">85%</p>
+              <p className="text-accent">
+                {history ? `${calculateTIR()}%` : '--%'}
+              </p>
             </div>
           </section>
         </div>
