@@ -42,7 +42,6 @@ def sync_dexcom():
         latest_reading_time = None
         for r in readings:
             # Ensure naive datetime for comparison and truncate microseconds
-            # MySQL DATETIME columns without precision truncate microseconds
             ts = r.datetime.replace(tzinfo=None, microsecond=0)
             if latest_reading_time is None or ts > latest_reading_time:
                 latest_reading_time = ts
@@ -64,7 +63,6 @@ def sync_dexcom():
             if status:
                 status.dexcom_last_sync = latest_reading_time
             else:
-                # Create a minimal status entry if none exists
                 new_status = PumpStatus(
                     dexcom_last_sync=latest_reading_time,
                     timestamp=datetime.now()
@@ -106,13 +104,6 @@ def sync_tandem():
         
         logger.info(f"Using device {device_id} (Serial: {tconnect_device.get('serialNumber')}, Last Seen: {last_event_time})")
         
-        # Fallback/Fast IOB check from pumper_info
-        pumper_info = api.pumper_info()
-        pumper_iob = None
-        if pumper_info and 'iob' in pumper_info:
-            pumper_iob = pumper_info['iob']
-            logger.info(f"Found IOB in pumper_info: {pumper_iob}")
-
         # Sync window: last 3 days
         time_start = (datetime.now() - timedelta(days=3)).strftime('%Y-%m-%d')
         time_end = (datetime.now() + timedelta(days=1)).strftime('%Y-%m-%d')
@@ -124,8 +115,8 @@ def sync_tandem():
         db = SessionLocal()
         bolus_count = 0
         basal_count = 0
-        latest_iob = pumper_iob # Start with pumper_info value if available
-        latest_iob_time = last_event_time
+        latest_iob = None
+        latest_iob_time = None
         latest_battery = None
         latest_battery_time = None
 
@@ -160,12 +151,10 @@ def sync_tandem():
 
             # Handle Basal Delivery (Periodic entries)
             if isinstance(event, eventtypes.LidBasalDelivery):
-                # Using seqNum as basal_id for these periodic updates
                 basal_id = f"delivery-{event.raw.seqNum}"
                 exists = db.query(PumpBasal).filter(PumpBasal.basal_id == basal_id).first()
                 if not exists:
                     dt = arrow.get(event.eventTimestamp).datetime.replace(tzinfo=None)
-                    # commandedRate is in milliunits/hr
                     rate_u_hr = float(event.commandedRate) / 1000.0
                     basal = PumpBasal(
                         rate=rate_u_hr,
@@ -182,17 +171,23 @@ def sync_tandem():
                     latest_battery = int(100 * event.batteryChargePercent)
                     latest_battery_time = event_time
 
-            # Track IOB (found on many event types, including LidDailyBasal and LidBolusCompleted)
-            if hasattr(event, 'IOB'):
-                event_time = arrow.get(event.eventTimestamp).datetime.replace(tzinfo=None)
-                # Only update if this event is actually newer than our current IOB time
-                if latest_iob_time is None or event_time >= latest_iob_time:
-                    latest_iob = event.IOB
-                    latest_iob_time = event_time
+            # Track IOB from ANY event that has it
+            if hasattr(event, 'IOB') or hasattr(event, 'iob'):
+                # Handle both uppercase and lowercase IOB field names
+                val = getattr(event, 'IOB', None)
+                if val is None:
+                    val = getattr(event, 'iob', None)
+                
+                if val is not None:
+                    event_time = arrow.get(event.eventTimestamp).datetime.replace(tzinfo=None)
+                    # Use >= to catch the absolute latest event even if timestamps match
+                    if latest_iob_time is None or event_time >= latest_iob_time:
+                        latest_iob = val
+                        latest_iob_time = event_time
 
         # Record latest IOB entry
         if latest_iob is not None and latest_iob_time:
-            # Only add if it's newer than the last one in DB
+            # Add to DB if it's newer than the last record
             last_db_iob = db.query(PumpIOB).order_by(PumpIOB.timestamp.desc()).first()
             if not last_db_iob or latest_iob_time > last_db_iob.timestamp:
                 iob_entry = PumpIOB(
@@ -200,10 +195,10 @@ def sync_tandem():
                     timestamp=latest_iob_time
                 )
                 db.add(iob_entry)
+                logger.info(f"Saved new IOB: {latest_iob} at {latest_iob_time}")
 
         # Record latest status (Battery, Last Sync Times)
         now = datetime.now()
-        # Keep dexcom_last_sync from previous entry if available
         last_status = db.query(PumpStatus).order_by(PumpStatus.timestamp.desc()).first()
         dexcom_sync = last_status.dexcom_last_sync if last_status else None
         
@@ -218,7 +213,7 @@ def sync_tandem():
 
         db.commit()
         db.close()
-        logger.info(f"Tandem sync complete. Boluses: {bolus_count}, Basals: {basal_count}, Battery: {latest_battery}%, IOB: {latest_iob}")
+        logger.info(f"Tandem sync complete. IOB: {latest_iob} at {latest_iob_time}")
     except Exception as e:
         logger.error(f"Tandem sync failed: {e}")
 

@@ -149,9 +149,9 @@ function App() {
               <p className="text-secondary" key={status?.iob?.amount}>
                 {status ? formatInsulin(status.iob?.amount) : '--.--'} U
               </p>
-              {status?.iob?.created_at && (
+              {status?.iob?.timestamp && (
                 <div style={{ fontSize: '0.7rem', opacity: 0.6, marginTop: '0.2rem' }}>
-                  Recorded {format(parseISO(status.iob.created_at), 'MMM d, h:mm a')}
+                  Recorded {format(parseISO(status.iob.timestamp), 'MMM d, h:mm a')}
                 </div>
               )}
             </div>
