@@ -133,9 +133,15 @@ function App() {
               <Droplet className="text-primary" />
             </div>
             <div className="stat-info">
-              <h3>Last 24h Bolus</h3>
+              <h3>Last / 24h Bolus</h3>
               <p className="text-primary" key={history?.boluses?.length}>
-                {history ? formatInsulin(history.boluses?.reduce((acc: number, curr: any) => acc + parseFloat(curr.amount), 0)) : '--.--'} U
+                {history ? (
+                  <>
+                    {history.boluses?.length > 0 ? formatInsulin(history.boluses[history.boluses.length - 1].amount) : '0.00'}
+                    <span style={{ opacity: 0.4, margin: '0 0.5rem', fontWeight: 400 }}>/</span>
+                    {formatInsulin(history.boluses?.reduce((acc: number, curr: any) => acc + parseFloat(curr.amount), 0))}
+                  </>
+                ) : '--.--'} U
               </p>
             </div>
           </section>
