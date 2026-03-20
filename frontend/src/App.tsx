@@ -145,7 +145,7 @@ function App() {
               </p>
               {status?.iob?.created_at && (
                 <div style={{ fontSize: '0.7rem', opacity: 0.6, marginTop: '0.2rem' }}>
-                  Recorded {format(parseISO(status.iob.created_at), 'h:mm a')}
+                  Recorded {format(parseISO(status.iob.created_at), 'MMM d, h:mm a')}
                 </div>
               )}
             </div>
