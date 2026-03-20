@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Droplet, Zap, RefreshCw, ArrowUp, ArrowDown, ArrowRight, TrendingUp, History as HistoryIcon, ShieldCheck, Battery } from 'lucide-react';
 import { XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area 
 } from 'recharts';
-import { format, parseISO, formatDistanceToNow } from 'date-fns';
+import { format, parseISO, formatDistanceToNow, differenceInMinutes } from 'date-fns';
 import './App.css';
 
 const Logo = () => (
@@ -87,12 +87,18 @@ function App() {
               
               <div style={{ display: 'flex', gap: '0.75rem', marginLeft: '0.5rem', borderLeft: '1px solid var(--border)', paddingLeft: '0.75rem', fontSize: '0.7rem', opacity: 0.8 }}>
                 {status.pump_status.last_event_time && (
-                  <span>
+                  <span style={{ 
+                    color: differenceInMinutes(new Date(), parseISO(status.pump_status.last_event_time)) > 20 ? 'var(--danger)' : 'inherit',
+                    fontWeight: differenceInMinutes(new Date(), parseISO(status.pump_status.last_event_time)) > 20 ? 'bold' : 'normal'
+                  }}>
                     <strong style={{ color: 'var(--text-main)' }}>Tandem:</strong> {formatDistanceToNow(parseISO(status.pump_status.last_event_time), { addSuffix: true })}
                   </span>
                 )}
                 {status.pump_status.dexcom_last_sync && (
-                  <span>
+                  <span style={{ 
+                    color: differenceInMinutes(new Date(), parseISO(status.pump_status.dexcom_last_sync)) > 5 ? 'var(--danger)' : 'inherit',
+                    fontWeight: differenceInMinutes(new Date(), parseISO(status.pump_status.dexcom_last_sync)) > 5 ? 'bold' : 'normal'
+                  }}>
                     <strong style={{ color: 'var(--text-main)' }}>Dexcom:</strong> {formatDistanceToNow(parseISO(status.pump_status.dexcom_last_sync), { addSuffix: true })}
                   </span>
                 )}
