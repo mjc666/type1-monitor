@@ -40,5 +40,7 @@ class PumpStatus(Base):
     id = Column(Integer, primary_key=True, index=True)
     battery_percent = Column(Integer)
     insulin_remaining = Column(Integer)
+    last_event_time = Column(DateTime)
+    last_sync_attempt = Column(DateTime)
     timestamp = Column(DateTime, nullable=False)
     created_at = Column(TIMESTAMP, server_default=func.now())

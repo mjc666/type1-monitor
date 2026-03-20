@@ -84,7 +84,9 @@ def sync_tandem():
                 max_date_seen = pump_date
         
         device_id = tconnect_device['tconnectDeviceId']
-        logger.info(f"Using device {device_id} (Serial: {tconnect_device.get('serialNumber')}, Last Seen: {tconnect_device.get('maxDateWithEvents')})")
+        last_event_time = arrow.get(tconnect_device.get('maxDateWithEvents')).datetime.replace(tzinfo=None)
+        
+        logger.info(f"Using device {device_id} (Serial: {tconnect_device.get('serialNumber')}, Last Seen: {last_event_time})")
         
         # Sync window: last 3 days
         time_start = (datetime.now() - timedelta(days=3)).strftime('%Y-%m-%d')
@@ -156,19 +158,19 @@ def sync_tandem():
                 )
                 db.add(iob_entry)
 
-        # Record latest Battery entry
-        if latest_battery is not None and latest_battery_time:
-            last_db_status = db.query(PumpStatus).order_by(PumpStatus.timestamp.desc()).first()
-            if not last_db_status or latest_battery_time > last_db_status.timestamp:
-                status_entry = PumpStatus(
-                    battery_percent=latest_battery,
-                    timestamp=latest_battery_time
-                )
-                db.add(status_entry)
+        # Record latest status (Battery, Last Sync Times)
+        now = datetime.now()
+        status_entry = PumpStatus(
+            battery_percent=latest_battery,
+            last_event_time=last_event_time,
+            last_sync_attempt=now,
+            timestamp=now
+        )
+        db.add(status_entry)
 
         db.commit()
         db.close()
-        logger.info(f"Tandem sync complete. Boluses: {bolus_count}, Basals: {basal_count}, Battery: {latest_battery}%")
+        logger.info(f"Tandem sync complete. Boluses: {bolus_count}, Basals: {basal_count}, Battery: {latest_battery}%, Last Event: {last_event_time}")
     except Exception as e:
         logger.error(f"Tandem sync failed: {e}")
 

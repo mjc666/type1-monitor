@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Droplet, Zap, RefreshCw, ArrowUp, ArrowDown, ArrowRight, TrendingUp, History as HistoryIcon, ShieldCheck, Battery } from 'lucide-react';
 import { XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area 
 } from 'recharts';
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, formatDistanceToNow } from 'date-fns';
 import './App.css';
 
 const Logo = () => (
@@ -82,6 +82,11 @@ function App() {
             <div className="sync-status" style={{ color: status.pump_status.battery_percent < 20 ? 'var(--danger)' : 'var(--text-muted)' }}>
               <Battery size={16} />
               <span>{status.pump_status.battery_percent}%</span>
+              {status.pump_status.last_event_time && (
+                <span style={{ fontSize: '0.7rem', opacity: 0.8, marginLeft: '0.25rem', borderLeft: '1px solid var(--border)', paddingLeft: '0.5rem' }}>
+                  Synced {formatDistanceToNow(parseISO(status.pump_status.last_event_time), { addSuffix: true })}
+                </span>
+              )}
             </div>
           )}
           <div className="sync-status">
@@ -206,7 +211,7 @@ function App() {
               <div key={b.id} className="history-item">
                 <div className="history-item-left">
                   <span className="type-tag type-bolus">BOLUS</span>
-                  <strong>{parseFloat(b.amount).toFixed(2)} U</strong>
+                  <strong>{formatInsulin(b.amount)} U</strong>
                 </div>
                 <span className="history-time">{format(parseISO(b.timestamp), 'h:mm a')}</span>
               </div>
