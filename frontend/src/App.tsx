@@ -137,11 +137,11 @@ function App() {
               <p className="text-primary" key={history?.boluses?.length}>
                 {history ? (
                   <>
-                    {history.boluses?.length > 0 ? formatInsulin(history.boluses[history.boluses.length - 1].amount) : '0.00'}
+                    {history.boluses?.length > 0 ? formatInsulin(history.boluses[history.boluses.length - 1].amount) : '0.00'} U
                     <span style={{ opacity: 0.4, margin: '0 0.5rem', fontWeight: 400 }}>/</span>
-                    {formatInsulin(history.boluses?.reduce((acc: number, curr: any) => acc + parseFloat(curr.amount), 0))}
+                    {formatInsulin(history.boluses?.reduce((acc: number, curr: any) => acc + parseFloat(curr.amount), 0))} U
                   </>
-                ) : '--.--'} U
+                ) : '--.-- U'}
               </p>
             </div>
           </section>
