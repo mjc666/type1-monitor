@@ -37,7 +37,7 @@ function App() {
 
   useEffect(() => {
     fetchData();
-    const interval = setInterval(fetchData, 60000); // Poll every minute
+    const interval = setInterval(fetchData, 30000); // Poll every 30 seconds
     return () => clearInterval(interval);
   }, []);
 
