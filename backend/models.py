@@ -42,5 +42,6 @@ class PumpStatus(Base):
     insulin_remaining = Column(Integer)
     last_event_time = Column(DateTime)
     last_sync_attempt = Column(DateTime)
+    dexcom_last_sync = Column(DateTime)
     timestamp = Column(DateTime, nullable=False)
     created_at = Column(TIMESTAMP, server_default=func.now())

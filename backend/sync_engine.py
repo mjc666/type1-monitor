@@ -39,10 +39,14 @@ def sync_dexcom():
 
         db = SessionLocal()
         added_count = 0
+        latest_reading_time = None
         for r in readings:
             # Ensure naive datetime for comparison and truncate microseconds
             # MySQL DATETIME columns without precision truncate microseconds
             ts = r.datetime.replace(tzinfo=None, microsecond=0)
+            if latest_reading_time is None or ts > latest_reading_time:
+                latest_reading_time = ts
+                
             exists = db.query(GlucoseReading).filter(GlucoseReading.timestamp == ts).first()
             if not exists:
                 reading = GlucoseReading(
@@ -53,9 +57,23 @@ def sync_dexcom():
                 )
                 db.add(reading)
                 added_count += 1
+        
+        # Update dexcom_last_sync in PumpStatus
+        if latest_reading_time:
+            status = db.query(PumpStatus).order_by(PumpStatus.timestamp.desc()).first()
+            if status:
+                status.dexcom_last_sync = latest_reading_time
+            else:
+                # Create a minimal status entry if none exists
+                new_status = PumpStatus(
+                    dexcom_last_sync=latest_reading_time,
+                    timestamp=datetime.now()
+                )
+                db.add(new_status)
+
         db.commit()
         db.close()
-        logger.info(f"Dexcom sync complete. Added {added_count} new readings.")
+        logger.info(f"Dexcom sync complete. Added {added_count} new readings. Latest: {latest_reading_time}")
     except Exception as e:
         logger.error(f"Dexcom sync failed: {e}")
 
@@ -160,10 +178,15 @@ def sync_tandem():
 
         # Record latest status (Battery, Last Sync Times)
         now = datetime.now()
+        # Keep dexcom_last_sync from previous entry if available
+        last_status = db.query(PumpStatus).order_by(PumpStatus.timestamp.desc()).first()
+        dexcom_sync = last_status.dexcom_last_sync if last_status else None
+        
         status_entry = PumpStatus(
             battery_percent=latest_battery,
             last_event_time=last_event_time,
             last_sync_attempt=now,
+            dexcom_last_sync=dexcom_sync,
             timestamp=now
         )
         db.add(status_entry)

@@ -79,14 +79,24 @@ function App() {
         <h1><Logo /> Type1 Monitor</h1>
         <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
           {status?.pump_status && (
-            <div className="sync-status" style={{ color: status.pump_status.battery_percent < 20 ? 'var(--danger)' : 'var(--text-muted)' }}>
-              <Battery size={16} />
-              <span>{status.pump_status.battery_percent}%</span>
-              {status.pump_status.last_event_time && (
-                <span style={{ fontSize: '0.7rem', opacity: 0.8, marginLeft: '0.25rem', borderLeft: '1px solid var(--border)', paddingLeft: '0.5rem' }}>
-                  Synced {formatDistanceToNow(parseISO(status.pump_status.last_event_time), { addSuffix: true })}
-                </span>
-              )}
+            <div className="sync-status" style={{ color: 'var(--text-muted)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: status.pump_status.battery_percent < 20 ? 'var(--danger)' : 'inherit' }}>
+                <Battery size={16} />
+                <span>{status.pump_status.battery_percent}%</span>
+              </div>
+              
+              <div style={{ display: 'flex', gap: '0.75rem', marginLeft: '0.5rem', borderLeft: '1px solid var(--border)', paddingLeft: '0.75rem', fontSize: '0.7rem', opacity: 0.8 }}>
+                {status.pump_status.last_event_time && (
+                  <span>
+                    <strong style={{ color: 'var(--text-main)' }}>Tandem:</strong> {formatDistanceToNow(parseISO(status.pump_status.last_event_time), { addSuffix: true })}
+                  </span>
+                )}
+                {status.pump_status.dexcom_last_sync && (
+                  <span>
+                    <strong style={{ color: 'var(--text-main)' }}>Dexcom:</strong> {formatDistanceToNow(parseISO(status.pump_status.dexcom_last_sync), { addSuffix: true })}
+                  </span>
+                )}
+              </div>
             </div>
           )}
           <div className="sync-status">
