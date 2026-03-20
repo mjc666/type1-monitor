@@ -106,6 +106,13 @@ def sync_tandem():
         
         logger.info(f"Using device {device_id} (Serial: {tconnect_device.get('serialNumber')}, Last Seen: {last_event_time})")
         
+        # Fallback/Fast IOB check from pumper_info
+        pumper_info = api.pumper_info()
+        pumper_iob = None
+        if pumper_info and 'iob' in pumper_info:
+            pumper_iob = pumper_info['iob']
+            logger.info(f"Found IOB in pumper_info: {pumper_iob}")
+
         # Sync window: last 3 days
         time_start = (datetime.now() - timedelta(days=3)).strftime('%Y-%m-%d')
         time_end = (datetime.now() + timedelta(days=1)).strftime('%Y-%m-%d')
@@ -117,8 +124,8 @@ def sync_tandem():
         db = SessionLocal()
         bolus_count = 0
         basal_count = 0
-        latest_iob = None
-        latest_iob_time = None
+        latest_iob = pumper_iob # Start with pumper_info value if available
+        latest_iob_time = last_event_time
         latest_battery = None
         latest_battery_time = None
 
@@ -158,10 +165,11 @@ def sync_tandem():
                     latest_battery = int(100 * event.batteryChargePercent)
                     latest_battery_time = event_time
 
-            # Track IOB (found on many event types, including LidDailyBasal)
+            # Track IOB (found on many event types, including LidDailyBasal and LidBolusCompleted)
             if hasattr(event, 'IOB'):
                 event_time = arrow.get(event.eventTimestamp).datetime.replace(tzinfo=None)
-                if latest_iob_time is None or event_time > latest_iob_time:
+                # Only update if this event is actually newer than our current IOB time
+                if latest_iob_time is None or event_time >= latest_iob_time:
                     latest_iob = event.IOB
                     latest_iob_time = event_time
 
@@ -193,7 +201,7 @@ def sync_tandem():
 
         db.commit()
         db.close()
-        logger.info(f"Tandem sync complete. Boluses: {bolus_count}, Basals: {basal_count}, Battery: {latest_battery}%, Last Event: {last_event_time}")
+        logger.info(f"Tandem sync complete. Boluses: {bolus_count}, Basals: {basal_count}, Battery: {latest_battery}%, IOB: {latest_iob}")
     except Exception as e:
         logger.error(f"Tandem sync failed: {e}")
 
