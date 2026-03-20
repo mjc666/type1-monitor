@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Droplet, Zap, RefreshCw, ArrowUp, ArrowDown, ArrowRight, TrendingUp, History as HistoryIcon, ShieldCheck, Battery, Activity } from 'lucide-react';
 import { XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area 
 } from 'recharts';
-import { format, parseISO, formatDistanceToNow, differenceInMinutes } from 'date-fns';
+import { format, parseISO, differenceInMinutes, differenceInHours, differenceInDays } from 'date-fns';
 import './App.css';
 
 const Logo = () => (
@@ -73,6 +73,18 @@ function App() {
     return isNaN(num) ? '0.00' : num.toFixed(2);
   };
 
+  const formatShortRelative = (dateStr: string) => {
+    const date = parseISO(dateStr);
+    const now = new Date();
+    const mins = differenceInMinutes(now, date);
+    if (mins < 1) return 'now';
+    if (mins < 60) return `${mins}m ago`;
+    const hours = differenceInHours(now, date);
+    if (hours < 24) return `${hours}h ago`;
+    const days = differenceInDays(now, date);
+    return `${days}d ago`;
+  };
+
   const calculateTIR = () => {
     if (!history?.glucose || history.glucose.length === 0) return null;
     const inRange = history.glucose.filter((g: any) => g.value >= 70 && g.value <= 180).length;
@@ -83,18 +95,18 @@ function App() {
     <div className="dashboard-container">
       <header className="header">
         <h1><Logo /> Type1 Monitor</h1>
-        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
           {status?.pump_status && (
             <div className="sync-status" style={{ color: 'var(--text-muted)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: status.pump_status.battery_percent < 20 ? 'var(--danger)' : 'inherit' }}>
-                <Battery size={16} />
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', color: status.pump_status.battery_percent < 20 ? 'var(--danger)' : 'inherit' }}>
+                <Battery size={14} />
                 <span>{status.pump_status.battery_percent}%</span>
               </div>
               
-              <div style={{ display: 'flex', gap: '0.75rem', marginLeft: '0.5rem', borderLeft: '1px solid var(--border)', paddingLeft: '0.75rem', fontSize: '0.7rem', opacity: 0.8 }}>
+              <div style={{ display: 'flex', gap: '0.5rem', marginLeft: '0.4rem', borderLeft: '1px solid var(--border)', paddingLeft: '0.5rem', fontSize: '0.65rem', opacity: 0.8 }}>
                 {status.pump_status.last_event_time && (
                   <span>
-                    <strong style={{ color: 'var(--text-main)' }}>Tandem:</strong> {formatDistanceToNow(parseISO(status.pump_status.last_event_time), { addSuffix: true })}
+                    <strong style={{ color: 'var(--text-main)' }}>T:</strong> {formatShortRelative(status.pump_status.last_event_time)}
                   </span>
                 )}
                 {status.pump_status.dexcom_last_sync && (
@@ -102,20 +114,19 @@ function App() {
                     color: differenceInMinutes(new Date(), parseISO(status.pump_status.dexcom_last_sync)) > 5 ? 'var(--danger)' : 'inherit',
                     fontWeight: differenceInMinutes(new Date(), parseISO(status.pump_status.dexcom_last_sync)) > 5 ? 'bold' : 'normal'
                   }}>
-                    <strong style={{ color: 'var(--text-main)' }}>Dexcom:</strong> {formatDistanceToNow(parseISO(status.pump_status.dexcom_last_sync), { addSuffix: true })}
+                    <strong style={{ color: 'var(--text-main)' }}>D:</strong> {formatShortRelative(status.pump_status.dexcom_last_sync)}
                   </span>
                 )}
               </div>
             </div>
           )}
-          <div className="sync-status">
+          <div className="sync-status" style={{ padding: '0.5rem' }}>
             <ShieldCheck size={16} className="text-primary" />
-            <span>System Active</span>
             <button 
               className="icon-btn" 
               onClick={triggerSync} 
               disabled={isSyncing}
-              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0 0.5rem' }}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', paddingLeft: '0.5rem', display: 'flex', alignItems: 'center' }}
             >
               <RefreshCw size={14} className={`${isSyncing ? 'spin' : ''} text-muted`} />
             </button>
