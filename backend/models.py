@@ -24,6 +24,7 @@ class PumpBasal(Base):
     __tablename__ = "pump_basals"
     id = Column(Integer, primary_key=True, index=True)
     rate = Column(Numeric(10, 2), nullable=False)
+    profile_rate = Column(Numeric(10, 2), nullable=True)
     basal_id = Column(String(100), unique=True, nullable=False)
     timestamp = Column(DateTime, nullable=False)
     created_at = Column(TIMESTAMP, server_default=func.now())

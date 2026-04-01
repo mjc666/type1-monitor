@@ -158,11 +158,16 @@ function App() {
             <div className="stat-info">
               <h3>Insulin On Board</h3>
               <p className="text-secondary" key={status?.iob?.amount}>
-                {status ? formatInsulin(status.iob?.amount) : '--.--'} U
+                {status ? formatInsulin(status.estimated_iob) : '--.--'} U
+                {status?.iob?.amount !== undefined && (
+                  <span style={{ fontSize: '0.8rem', opacity: 0.5, marginLeft: '0.5rem', fontWeight: 400 }}>
+                    ({formatInsulin(status.iob.amount)} rec)
+                  </span>
+                )}
               </p>
               {status?.iob?.timestamp && (
                 <div style={{ fontSize: '0.7rem', opacity: 0.6, marginTop: '0.2rem' }}>
-                  Recorded {format(parseISO(status.iob.timestamp), 'MMM d, h:mm a')}
+                  Last Recorded {format(parseISO(status.iob.timestamp), 'h:mm a')}
                 </div>
               )}
             </div>

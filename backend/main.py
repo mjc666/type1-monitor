@@ -33,11 +33,44 @@ def get_status(db: Session = Depends(get_db)):
     latest_iob = db.query(PumpIOB).order_by(PumpIOB.timestamp.desc()).first()
     latest_status = db.query(PumpStatus).order_by(PumpStatus.timestamp.desc()).first()
     
+    # Calculate estimated IOB
+    estimated_iob = 0
+    now = datetime.now()
+    DIA_MINS = 300 # 5-hour linear decay
+    
+    if latest_iob:
+        ref_time = latest_iob.timestamp
+        ref_amount = float(latest_iob.amount)
+        
+        # Decay the reference IOB
+        elapsed = (now - ref_time).total_seconds() / 60
+        if elapsed < DIA_MINS:
+            estimated_iob = ref_amount * (1.0 - (elapsed / DIA_MINS))
+            
+        # Add boluses that happened AFTER the reference IOB time
+        new_boluses = db.query(PumpBolus).filter(PumpBolus.timestamp > ref_time).all()
+        for bolus in new_boluses:
+            bolus_elapsed = (now - bolus.timestamp).total_seconds() / 60
+            if bolus_elapsed < DIA_MINS:
+                estimated_iob += float(bolus.amount) * (1.0 - (bolus_elapsed / DIA_MINS))
+        
+        # Account for basal adjustment since latest_iob time
+        # This is a delta between commanded and profile rate
+        latest_basal = db.query(PumpBasal).order_by(PumpBasal.timestamp.desc()).first()
+        if latest_basal and latest_basal.profile_rate:
+            # How much extra/less insulin was delivered per minute?
+            net_rate = float(latest_basal.rate) - float(latest_basal.profile_rate)
+            # Apply this net rate for the time elapsed since ref_time
+            # This is a very simple linear accumulation for small time windows
+            if elapsed < 30: # Only apply for small windows to avoid errors
+                estimated_iob += (net_rate / 60.0) * elapsed
+                
     return {
         "glucose": latest_glucose,
         "iob": latest_iob,
+        "estimated_iob": round(max(0, estimated_iob), 2),
         "pump_status": latest_status,
-        "timestamp": datetime.now()
+        "timestamp": now
     }
 
 @app.get("/api/history")
