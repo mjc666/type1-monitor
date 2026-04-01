@@ -156,12 +156,12 @@ function App() {
               <Zap className="text-secondary" />
             </div>
             <div className="stat-info">
-              <h3>Insulin On Board</h3>
-              <p className="text-secondary" key={status?.iob?.amount}>
-                {status ? formatInsulin(status.estimated_iob) : '--.--'} U
+              <h3>Estimated Insulin on Board</h3>
+              <p className="text-secondary" key={status?.iob?.amount} style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem' }}>
+                {status ? formatInsulin(status.estimated_iob) : '--.--'}U
                 {status?.iob?.amount !== undefined && (
-                  <span style={{ fontSize: '0.8rem', opacity: 0.5, marginLeft: '0.5rem', fontWeight: 400 }}>
-                    ({formatInsulin(status.iob.amount)} rec)
+                  <span style={{ opacity: 0.5, fontSize: '1rem' }}>
+                    ({formatInsulin(status.iob.amount)}U last recorded)
                   </span>
                 )}
               </p>
