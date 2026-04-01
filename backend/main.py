@@ -36,33 +36,37 @@ def get_status(db: Session = Depends(get_db)):
     # Calculate estimated IOB
     estimated_iob = 0
     now = datetime.now()
-    DIA_MINS = 300 # 5-hour linear decay
+    DIA_MINS = 300 # 5-hour duration
     
+    def calculate_decay(amount, elapsed_mins):
+        if elapsed_mins <= 0: return float(amount)
+        if elapsed_mins >= DIA_MINS: return 0.0
+        # Quadratic decay: IOB = Amount * (1 - t/DIA)^2
+        # This matches Tandem's curvilinear model much better than linear
+        return float(amount) * ((1.0 - (elapsed_mins / DIA_MINS)) ** 2)
+
     if latest_iob:
         ref_time = latest_iob.timestamp
         ref_amount = float(latest_iob.amount)
         
         # Decay the reference IOB
         elapsed = (now - ref_time).total_seconds() / 60
-        if elapsed < DIA_MINS:
-            estimated_iob = ref_amount * (1.0 - (elapsed / DIA_MINS))
+        estimated_iob = calculate_decay(ref_amount, elapsed)
             
         # Add boluses that happened AFTER the reference IOB time
         new_boluses = db.query(PumpBolus).filter(PumpBolus.timestamp > ref_time).all()
         for bolus in new_boluses:
             bolus_elapsed = (now - bolus.timestamp).total_seconds() / 60
-            if bolus_elapsed < DIA_MINS:
-                estimated_iob += float(bolus.amount) * (1.0 - (bolus_elapsed / DIA_MINS))
+            estimated_iob += calculate_decay(bolus.amount, bolus_elapsed)
         
         # Account for basal adjustment since latest_iob time
-        # This is a delta between commanded and profile rate
         latest_basal = db.query(PumpBasal).order_by(PumpBasal.timestamp.desc()).first()
         if latest_basal and latest_basal.profile_rate:
-            # How much extra/less insulin was delivered per minute?
             net_rate = float(latest_basal.rate) - float(latest_basal.profile_rate)
-            # Apply this net rate for the time elapsed since ref_time
-            # This is a very simple linear accumulation for small time windows
-            if elapsed < 30: # Only apply for small windows to avoid errors
+            # Only apply for small windows; assume the rate was constant since ref_time
+            if elapsed < 30: 
+                # Basal adjustments also decay, but for a 30m window, 
+                # a simple linear accumulation is a safe approximation.
                 estimated_iob += (net_rate / 60.0) * elapsed
                 
     return {
